@@ -27,10 +27,22 @@ def deleteGame(gameid):
     game_dao.delete_by_id(gameid)
     return jsonify({'result': True})
 
+#Join/Leave games
+@app.route('/game/join/<gameid>/<bowlerid>', methods=['POST'])
+def joinGame(gameid, bowlerid):
+    game_dao.join_game_by_id(gameid, bowlerid)
+    return jsonify({'result': True})
+
+@app.route('/game/leave/<gameid>/<bowlerid>', methods=['DELETE'])
+def leaveGame(gameid, bowlerid):
+    game_dao.leave_game_by_id(gameid, bowlerid)
+    return jsonify({'result': True})
+
 #CRUD operations for BOWLERS
 @app.route('/bowlers', methods=["GET"])
 def getBowlers():
     bowlers = bowler_dao.get_all()
+    #TODO Make this an inline with lambda
     out=[]
     for bowler in bowlers:
         out.append(bowler.serialize())
@@ -54,6 +66,7 @@ def deleteBowler(bowlerid):
     bowler_dao.delete_by_id(bowlerid)
     return jsonify({'result': True})
 
+#CRUD operations for ROLLS
 @app.route('/roll', methods=["POST"])
 def roll():
     

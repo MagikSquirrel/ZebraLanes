@@ -23,6 +23,19 @@ class GameDAO:
     def delete_by_id(self, id):
         session.query(Game).filter(Game.id==id).delete()
         session.commit()
+
+    def join_game_by_id(self, gameid, bowlerid):
+        game = self.get_by_id(gameid)
+        bowler = bowler_dao.get_by_id(bowlerid)
+        game.players.append(bowler)
+        session.commit()
+
+    def leave_game_by_id(self, gameid, bowlerid):
+        game = get_by_id(gameid)
+        bowler = bowler_dao.get_by_id(bowlerid)
+        game.players.delete(bowler)
+        session.commit()
+        session.commit()
     
 game_dao = GameDAO(Game)
 
@@ -35,7 +48,7 @@ class BowlerDAO:
         return session.query(self.model).all()
 
     def get_by_id(self, id):
-        return session.get(id)
+        return session.query(self.model).get(id)
 
     def create(self, name):
         bowler = Bowler(name=name)

@@ -1,25 +1,38 @@
 import os
 import sys
-from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy import * #Column, ForeignKey, Integer, String, relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy import create_engine
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
+from sqlalchemy.orm import backref
  
 ma = Marshmallow()
 Base = declarative_base()
+
+# Bridge table between Games and Bowlers
+gameBowlers = Table('game_bowlers',
+    Base.metadata,
+    Column('game_id', Integer, ForeignKey('game.id')),
+    Column('bowler_id', Integer, ForeignKey('bowler.id'))
+)
 
 class Game(Base):
     __tablename__ = 'game'
     
     id = Column(Integer, primary_key=True)
+    players = relationship('Bowler', secondary=gameBowlers, backref=backref('games', lazy = 'dynamic'))
 
     class Meta:
         fields = ('id')
 
     def serialize(self):
-        return {"id": self.id}
+        #TODO Make this an inline with lambda
+        p=[]
+        for bowler in self.players:
+            p.append(bowler.serialize())
+        return {"id": self.id, "players": p}
 
 class Frame(Base):
     __tablename__ = 'frame'
