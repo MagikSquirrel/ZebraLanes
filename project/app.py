@@ -77,22 +77,33 @@ def deleteBowler(bowlerid):
 #CRUD operations for ROLLS
 @app.route('/roll/<gameid>/<bowlerid>/<pins>', methods=["POST"])
 def roll(gameid, bowlerid, pins):
-    
+    pinsInt = int(pins)
     bowlersFrames = frame_dao.get_all_by_game_and_bowler(gameid, bowlerid)
 
     #What is the last frame?
     lastFrame = bowlersFrames[-1]
 
     #If we don't have a rollB, put the pins here.
-    if lastFrame is not None and lastFrame.rollB is None:
-        frame_dao.updateRolls(lastFrame.id, lastFrame.rollA, pins)
+    if lastFrame is not None and lastFrame.rollB is None and lastFrame.rollA != 10:
+        lastRoll = safeInt(lastFrame.rollA)
+        frame_dao.updateRolls(lastFrame.id, lastRoll, min([10-lastRoll, pinsInt], default=0))
         return jsonify(lastFrame.serialize())
+
+    #Is the game done?
+    if lastFrame is not None and lastFrame.number >= 10:
+        twoFramesBack =  bowlersFrames[-2]
+        if lastFrame.number == 12:
+            return make_error(400, "This game is over, can't add more rolls.", None, None) #Frame '13'
+        if lastFrame.number == 11 and twoFramesBack.rollA != 10:
+            return make_error(400, "This game is over, can't add more rolls.", None, None) #Frame 12 requires frame 10 to be strike
+        if lastFrame.number == 10 and (lastFrame.rollA != 10 or (safeInt(lastFrame.rollA) + safeInt(lastFrame.rollB) != 10)):
+            return make_error(400, "This game is over, can't add more rolls.", None, None) #Frame 11 requires frame 10 to be strike or spare
     
     #Otherwise we're a new frame
     nextNum = 1
     if lastFrame is not None:
         nextNum = lastFrame.number + 1
-    lastFrame = frame_dao.create(gameid, bowlerid, nextNum, pins)
+    lastFrame = frame_dao.create(gameid, bowlerid, nextNum, min([10, pinsInt], default=0))
 
     return jsonify(lastFrame.serialize())
 
@@ -107,6 +118,7 @@ def make_error(status_code, sub_code, message, action):
     response.status_code = status_code
     return response
 
+#Calculate the scores for each frame. Spares look one roll ahead, strikes look 2 rolls ahead.
 def calculateScores(frames):
     for i, frame in enumerate(frames):
 
@@ -131,6 +143,10 @@ def calculateScores(frames):
             if len(frames) > i+1:
                 next = frames[i+1]            
                 score += next.rollA
+
+        #regular
+        else:
+            score += safeInt(frame.rollB)
 
         frame.score = score
 
