@@ -7,6 +7,13 @@ This is a software coding challenge to implement a bowling scoring system that o
  - [SQLAlchemy](https://www.sqlalchemy.org/)
  - [Marshmallow](https://marshmallow.readthedocs.io/en/stable/)
  - [Postman](https://www.postman.com/)
+ - [SQLite](https://sqlite.org/index.html)
+
+The application is architected in the following way
+ - **Data Layer** This is a SQLite database
+ - **Model Layer** This is the business and data design of the objects to work with
+ - **DAO** This is where CRUD operations between the service layer and data layer occur
+ - **App Layer** This is where the API end points rest as well as the business logic for the Bowling Rules.
 
 The API has 3 major models that it works with
 
@@ -154,4 +161,3 @@ Somethings that would have been nice to explore
  - Adding unit tests
  - Enforcing multiple players to bowl in order
  - Instead of returning 200 OK for most calls, return data that would be useful for the next phase of the game.
- - 
