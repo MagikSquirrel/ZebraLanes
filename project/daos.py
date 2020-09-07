@@ -39,6 +39,32 @@ class GameDAO:
     
 game_dao = GameDAO(Game)
 
+class FrameDAO:
+
+    def __init__(self, model):
+        self.model = model    
+    
+    def get_all(self):
+        return session.query(self.model).all()
+
+    def get_all__id(self, id):
+        return session.query(self.model).get(id)
+
+    def get_all_by_game_and_bowler(self, gameid, bowlerid):
+        return session.query(Frame).filter(Frame.game_id==gameid).filter(Frame.bowler_id==bowlerid).all()
+
+    def updateRolls(self, frameid, rollA, rollB):
+        session.query(Frame).filter(Frame.id==frameid).update({"rollA": rollA, "rollB": rollB})
+        session.commit()
+
+    def create(self, gameid, bowlerid, number, pinsA):
+        frame = Frame(game_id=gameid, bowler_id=bowlerid, number=number, rollA=pinsA)
+        session.add(frame)
+        session.commit()
+        return frame
+
+frame_dao = FrameDAO(Frame)
+
 class BowlerDAO:
 
     def __init__(self, model):

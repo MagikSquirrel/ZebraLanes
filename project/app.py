@@ -2,11 +2,8 @@ from flask import Flask
 from flask import make_response, jsonify, request
 from daos import *
 from models import *
-#from schemas import bowler_schema
 
 app = Flask(__name__)
-
-#bowler_schema = BowlerSchema()
 
 #CRUD operations for GAMES
 @app.route('/game/<gameid>', methods=['GET'])
@@ -38,6 +35,17 @@ def leaveGame(gameid, bowlerid):
     game_dao.leave_game_by_id(gameid, bowlerid)
     return jsonify({'result': True})
 
+#CRUD operations for FRAMES
+@app.route('/frames', methods=["GET"])
+def getAllFrames():
+    frames = frame_dao.get_all()
+    frames = calculateScores(frames)
+    out=[]
+    for frame in frames:
+        out.append(frame.serialize())
+    else:
+        return jsonify(out)
+
 #CRUD operations for BOWLERS
 @app.route('/bowlers', methods=["GET"])
 def getBowlers():
@@ -67,16 +75,26 @@ def deleteBowler(bowlerid):
     return jsonify({'result': True})
 
 #CRUD operations for ROLLS
-@app.route('/roll', methods=["POST"])
-def roll():
+@app.route('/roll/<gameid>/<bowlerid>/<pins>', methods=["POST"])
+def roll(gameid, bowlerid, pins):
     
-    req = request.get_json()
+    bowlersFrames = frame_dao.get_all_by_game_and_bowler(gameid, bowlerid)
 
-    ## store?
-    print(req);
+    #What is the last frame?
+    lastFrame = bowlersFrames[-1]
 
-    res = make_response(jsonify({"message": "Collection created"}), 201)
-    return res
+    #If we don't have a rollB, put the pins here.
+    if lastFrame is not None and lastFrame.rollB is None:
+        frame_dao.updateRolls(lastFrame.id, lastFrame.rollA, pins)
+        return jsonify(lastFrame.serialize())
+    
+    #Otherwise we're a new frame
+    nextNum = 1
+    if lastFrame is not None:
+        nextNum = lastFrame.number + 1
+    lastFrame = frame_dao.create(gameid, bowlerid, nextNum, pins)
+
+    return jsonify(lastFrame.serialize())
 
 # Generic method for error handling
 def make_error(status_code, sub_code, message, action):
@@ -88,6 +106,42 @@ def make_error(status_code, sub_code, message, action):
     })
     response.status_code = status_code
     return response
+
+def calculateScores(frames):
+    for i, frame in enumerate(frames):
+
+        score = safeInt(frame.rollA)
+
+        #strike
+        if safeInt(frame.rollA) == 10:
+            # look ahead 2 if we have it
+            if len(frames) > i+2:
+                next = frames[i+2]            
+                score += next.rollA
+
+            # look ahead 1 if we have it
+            if len(frames) > i+1:
+                next = frames[i+1]            
+                score += next.rollA
+
+        #spare
+        elif safeInt(frame.rollA) + safeInt(frame.rollB) == 10:
+
+            # look ahead 1 if we have it
+            if len(frames) > i+1:
+                next = frames[i+1]            
+                score += next.rollA
+
+        frame.score = score
+
+    return frames
+
+# to avoid None type exceptions
+def safeInt(int):
+    if int is None:
+        return 0
+    return int
+    
 
 # Run the application
 app.run()

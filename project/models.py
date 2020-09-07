@@ -39,14 +39,23 @@ class Frame(Base):
     
     id = Column(Integer, primary_key=True)
     game_id = Column(Integer, ForeignKey('game.id'))
-    rollA_id = Column(Integer, ForeignKey('roll.id'))
-    rollB_id = Column(Integer, ForeignKey('roll.id'))
- 
-class Roll(Base):
-    __tablename__ = 'roll'
-    
-    id = Column(Integer, primary_key=True)
-    pins = Column(Integer)
+    bowler_id = Column(Integer, ForeignKey('bowler.id'))
+    number = Column(Integer)
+    rollA = Column(Integer)
+    rollB = Column(Integer)
+    score = Column(Integer)
+
+    class Meta:
+        fields = ('id')
+
+    def serialize(self):
+        return {"id": self.id,
+                "gameid": self.game_id,
+                "bowlerid": self.bowler_id,
+                "number": self.number,
+                "rollA": self.rollA,
+                "rollB": self.rollB,
+                "score": self.score}
 
 class Bowler(Base):
     __tablename__ = 'bowler'
@@ -68,10 +77,6 @@ class GameSchema(ma.Schema):
 class FrameSchema(ma.Schema):
     class Meta:
         model = Frame
-
-class RollSchema(ma.Schema):
-    class Meta:
-        model = Roll
 
 class BowlerSchema(ma.Schema):
     class Meta:
